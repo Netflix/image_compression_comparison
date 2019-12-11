@@ -15,7 +15,7 @@ __maintainer__ = "Aditya Mavlankar"
 __email__ = "amavlankar@netflix.com"
 __status__ = "Development"
 
-RateQualityPoint = namedtuple('RateQualityPoint', ['bpp', 'vmaf', 'ssim', 'target_metric', 'target_value'])
+RateQualityPoint = namedtuple('RateQualityPoint', ['bpp', 'quality', 'target_metric', 'target_value'])
 BD_RATE_EXCEPTION_STRING = 'BD_RATE_EXCEPTION'
 
 
@@ -25,11 +25,21 @@ def get_unique_sources_sorted(connection):
     return sorted(list(set(unique_sources)))
 
 
-def get_rate_quality_points(connection, sub_sampling, codec, source, total_pixels):
+def get_quality_dict(elem, list_of_metrics):
+    quality = dict()
+    for index, metric in enumerate(list_of_metrics):
+        quality[metric] = elem[index]
+    return quality
+
+
+def get_rate_quality_points(connection, sub_sampling, codec, source, total_pixels, list_of_metrics):
     # print('{} {} {}'.format(codec, sub_sampling, source))
-    points = connection.execute("SELECT VMAF,SSIM,FILE_SIZE_BYTES,TARGET_METRIC,TARGET_VALUE FROM ENCODES WHERE CODEC='{}' AND SUB_SAMPLING='{}' AND SOURCE='{}'"
-                                .format(codec, sub_sampling, source)).fetchall()
-    rate_quality_points = [RateQualityPoint(elem[2] / total_pixels, elem[0], elem[1], elem[3], elem[4]) for elem in points]
+    csv_metrics_upper = ','.join([elem.upper() for elem in list_of_metrics])
+    points = connection.execute("SELECT {},FILE_SIZE_BYTES,TARGET_METRIC,TARGET_VALUE FROM ENCODES WHERE CODEC='{}' AND SUB_SAMPLING='{}' AND SOURCE='{}'"
+                                .format(csv_metrics_upper, codec, sub_sampling, source)).fetchall()
+    rate_quality_points = [
+        RateQualityPoint(elem[len(list_of_metrics)] / total_pixels, get_quality_dict(elem, list_of_metrics),
+                         elem[len(list_of_metrics) + 1], elem[len(list_of_metrics) + 2]) for elem in points]
     # print(repr(rate_quality_points))
     return rate_quality_points
 
@@ -38,12 +48,8 @@ def get_rates(rate_quality_points):
     return [rate_quality_point.bpp for rate_quality_point in rate_quality_points]
 
 
-def get_vmaf(rate_quality_points):
-    return [rate_quality_point.vmaf for rate_quality_point in rate_quality_points]
-
-
-def get_ssim(rate_quality_points):
-    return [rate_quality_point.ssim for rate_quality_point in rate_quality_points]
+def get_quality(rate_quality_points, metric):
+    return [rate_quality_point.quality[metric] for rate_quality_point in rate_quality_points]
 
 
 def get_formatted_bdrate(val):
@@ -54,37 +60,37 @@ def get_formatted_bdrate(val):
 
 
 def get_formatted_mean_bdrate(val):
-    return '{:.2f}'.format(val).rjust(6)
+    return '{:.2f}'.format(val).rjust(22)
 
 
 def my_shorten(name, width):
     return (name[:width - 3] + '...') if len(name) > width else name
 
 
-def print_bd_rates(bdrates_vmaf, bdrates_ssim, codec, unique_sources, black_list_source_VMAF_BDRATE,
-                   black_list_source_SSIM_BDRATE):
-    bdrates_vmaf_this_codec = list()
-    bdrates_ssim_this_codec = list()
+def print_bd_rates(bdrates_various_metrics, codec, unique_sources, black_list_source_various_metrics,
+                   list_of_metrics):
+    bdrates_this_codec_various_metrics = dict()
+    for metric in list_of_metrics:
+        bdrates_this_codec_various_metrics[metric] = list()
     max_len_source_name = len(max(unique_sources, key=len))
     max_len_to_use_for_printing = min(80, max_len_source_name)
     for source in unique_sources:
-        print('  {} {} BDRate-VMAF {} BDRate-SSIM {}'.format(my_shorten(source,
-                                                                        max_len_to_use_for_printing)
-                                                             .ljust(max_len_to_use_for_printing),
-                                                             codec,
-                                                             get_formatted_bdrate(bdrates_vmaf[codec][source]),
-                                                             get_formatted_bdrate(bdrates_ssim[codec][source])))
-        if source not in black_list_source_VMAF_BDRATE:
-            bdrates_vmaf_this_codec.append(bdrates_vmaf[codec][source])
-        if source not in black_list_source_SSIM_BDRATE:
-            bdrates_ssim_this_codec.append(bdrates_ssim[codec][source])
-    result = '{} Mean BDRate-VMAF {}   Mean BDRate-SSIM {}'.format(codec.ljust(16),
-                                                                   get_formatted_mean_bdrate(
-                                                                       mean(bdrates_vmaf_this_codec)),
-                                                                   get_formatted_mean_bdrate(
-                                                                       mean(bdrates_ssim_this_codec)))
-    print(result + '\n')
-    return mean(bdrates_vmaf_this_codec), mean(bdrates_ssim_this_codec), result
+        print_string = '  {} {}'.format(my_shorten(source,
+                                                    max_len_to_use_for_printing)
+                                         .ljust(max_len_to_use_for_printing),
+                                         codec)
+        for metric in list_of_metrics:
+            print_string += ' BDRate-{} {}'.format(metric.upper(), get_formatted_bdrate(bdrates_various_metrics[metric][codec][source]))
+            if source not in black_list_source_various_metrics[metric]:
+                bdrates_this_codec_various_metrics[metric].append(bdrates_various_metrics[metric][codec][source])
+        print(print_string)
+    result = codec.ljust(16)
+    result_local = result
+    for metric in list_of_metrics:
+        result += '{}'.format(get_formatted_mean_bdrate(mean(bdrates_this_codec_various_metrics[metric])))
+        result_local += '   Mean BDRate-{} {:.2f}'.format(metric.upper(), mean(bdrates_this_codec_various_metrics[metric]))
+    print(result_local + '\n')
+    return result
 
 
 def main(argv):
@@ -99,65 +105,60 @@ def main(argv):
     sub_sampling_arr = ['420', '444']
     codecs = ['jpeg-mse', 'jpeg-ms-ssim', 'jpeg-im', 'jpeg-hvs-psnr', 'webp', 'kakadu-mse', 'kakadu-visual', 'openjpeg',
               'hevc', 'avif-mse', 'avif-ssim']
-
+    metrics_for_BDRate = ['vmaf', 'ssim', 'ms_ssim', 'vif', 'psnr_y', 'psnr_avg']
     for sub_sampling in sub_sampling_arr:
-        bdrates_vmaf = defaultdict(dict)
-        bdrates_ssim = defaultdict(dict)
+        bdrates_various_metrics = dict()
+        black_list_source_various_metrics = dict()
+        for metric in metrics_for_BDRate:
+            bdrates_various_metrics[metric] = defaultdict(dict)
+            black_list_source_various_metrics[metric] = list()
         print('\n\nComputing BD rates for subsampling {}'.format(sub_sampling))
-        black_list_source_VMAF_BDRATE = list()
-        black_list_source_SSIM_BDRATE = list()
         for source in unique_sources:
-            baseline_rate_quality_points = get_rate_quality_points(connection, sub_sampling, baseline_codec, source, total_pixels)
+            baseline_rate_quality_points = get_rate_quality_points(connection, sub_sampling, baseline_codec, source, total_pixels, metrics_for_BDRate)
             for codec in codecs:
                 if codec == 'webp' and sub_sampling == '444':
                     continue
-                rate_quality_points = get_rate_quality_points(connection, sub_sampling, codec, source, total_pixels)
-                # print('VMAF')
-                try:
-                    bd_rate_vmaf = 100.0 * BDrateCalculator.CalcBDRate(
-                        list(zip(get_rates(baseline_rate_quality_points), get_vmaf(baseline_rate_quality_points))),
-                        list(zip(get_rates(rate_quality_points), get_vmaf(rate_quality_points))))
-                    bdrates_vmaf[codec][source] = bd_rate_vmaf
-                except AssertionError as e:
-                    print('vmaf {} {} {}: '.format(source, codec, sub_sampling) + str(e))
-                    bdrates_vmaf[codec][source] = BD_RATE_EXCEPTION_STRING
-                    # BD rate computation failed for one of the codecs,
-                    # so to be fair, ignore this source for final results
-                    if source not in black_list_source_VMAF_BDRATE:
-                        black_list_source_VMAF_BDRATE.append(source)
+                rate_quality_points = get_rate_quality_points(connection, sub_sampling, codec, source, total_pixels, metrics_for_BDRate)
 
-                # print('SSIM')
-                try:
-                    bd_rate_ssim = 100.0 * BDrateCalculator.CalcBDRate(
-                        list(zip(get_rates(baseline_rate_quality_points), get_ssim(baseline_rate_quality_points))),
-                        list(zip(get_rates(rate_quality_points), get_ssim(rate_quality_points))))
-                    bdrates_ssim[codec][source] = bd_rate_ssim
-                except AssertionError as e:
-                    print('ssim {} {} {}: '.format(source, codec, sub_sampling) + str(e))
-                    bdrates_ssim[codec][source] = BD_RATE_EXCEPTION_STRING
-                    # BD rate computation failed for one of the codecs,
-                    # so to be fair, ignore this source for final results
-                    if source not in black_list_source_SSIM_BDRATE:
-                        black_list_source_SSIM_BDRATE.append(source)
+                for metric in metrics_for_BDRate:
+                    # print(metric.upper())
+                    try:
+                        bd_rate_val = 100.0 * BDrateCalculator.CalcBDRate(
+                            list(zip(get_rates(baseline_rate_quality_points), get_quality(baseline_rate_quality_points, metric))),
+                            list(zip(get_rates(rate_quality_points), get_quality(rate_quality_points, metric))))
+                        bdrates_various_metrics[metric][codec][source] = bd_rate_val
+                    except AssertionError as e:
+                        print('{} {} {} {}: '.format(metric, source, codec, sub_sampling) + str(e))
+                        bdrates_various_metrics[metric][codec][source] = BD_RATE_EXCEPTION_STRING
+                        # BD rate computation failed for one of the codecs,
+                        # so to be fair, ignore this source for final results
+                        if source not in black_list_source_various_metrics[metric]:
+                            black_list_source_various_metrics[metric].append(source)
 
-        print('{} black list VMAF BD RATE\n '.format(sub_sampling) + repr(black_list_source_VMAF_BDRATE))
-        print('{} black list SSIM BD RATE\n '.format(sub_sampling) + repr(black_list_source_SSIM_BDRATE))
+        for metric in metrics_for_BDRate:
+            print('{} black list {} BD RATE\n '.format(sub_sampling, metric.upper()) + repr(black_list_source_various_metrics[metric]))
         results = dict()
         for codec in codecs:
             if codec == 'webp' and sub_sampling == '444':
                 continue
             print('Codec {} subsampling {}, BD rates:'.format(codec, sub_sampling))
-            mean_bd_vmaf, mean_bd_ssim, result = print_bd_rates(bdrates_vmaf, bdrates_ssim, codec, unique_sources,
-                                                                black_list_source_VMAF_BDRATE,
-                                                                black_list_source_SSIM_BDRATE)
+            result = print_bd_rates(bdrates_various_metrics, codec, unique_sources,
+                                    black_list_source_various_metrics,
+                                    metrics_for_BDRate)
             results[codec] = result
-        print('\n\n------------------------------------------------')
-        print('Results for subsampling {}'.format(sub_sampling))
+        print('\n\n===================' + '=' * 22 * len(metrics_for_BDRate))
+        results_header = 'Results for subsampling {}'.format(sub_sampling)
+        print(results_header)
+        print('-' * len(results_header))
+        table_header = 'Codec'.ljust(16)
+        for metric in metrics_for_BDRate:
+            table_header += ' Mean BDRate-{}'.format(metric.upper()).rjust(22)
+        print(table_header)
         for codec in codecs:
             if codec == 'webp' and sub_sampling == '444':
                 continue
             print(results[codec])
-        print('------------------------------------------------')
+        print('===================' + '=' * 22 * len(metrics_for_BDRate))
 
 
 if __name__ == '__main__':
