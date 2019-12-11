@@ -95,6 +95,8 @@ def main(argv):
     plot_list = ['webp', 'kakadu-mse', 'kakadu-visual', 'hevc', 'avif-mse', 'avif-ssim']
     color_list = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
     marker_list = ['o', 'v', '>', '<', 's', 'p', 'd', '4', 'P', 'X']
+    assert len(color_list) == len(marker_list)  # 10 curves on one plot is the limit, beyond that is sensory overload
+    assert len(plot_list) <= len(marker_list)
     for sub_sampling in sub_sampling_arr:
         results_dict = dict()
         results_bpp = defaultdict(list)
@@ -108,6 +110,7 @@ def main(argv):
             results_bpp[baseline_codec].append(baseline_file_size / total_pixels)
             results_quality[baseline_codec].append(baseline_metric_value)
             results_list = list()
+            results_list_terse = list()
             for codec in codecs:
                 if codec == 'webp' and sub_sampling == '444':
                     continue
@@ -117,17 +120,30 @@ def main(argv):
                 # negative is better. Positive means increase in file_size
                 print('  Average reduction is {:.2f}%'.format((file_size - baseline_file_size) / baseline_file_size * 100.0))
                 results_list.append('{} {:.2f}%'.format(codec, (file_size - baseline_file_size) / baseline_file_size * 100.0))
+                results_list_terse.append(
+                    '{:.2f}%'.format((file_size - baseline_file_size) / baseline_file_size * 100.0).rjust(16))
                 results_bpp[codec].append(file_size / total_pixels)
                 results_quality[codec].append(metric_value)
-            results_dict[target] = results_list
+            results_dict[target] = (results_list, results_list_terse)
             print("")
-        print('\n{} subsampling'.format(sub_sampling))
+        print('\n')
+        print('=' * (8 + 16 * len(codecs)))
+        sub_sampling_report = '{} subsampling'.format(sub_sampling)
+        print(sub_sampling_report)
+        print('-' * len(sub_sampling_report))
+        codecs_string = ' ' * 8
+        for codec in codecs:
+            if codec == 'webp' and sub_sampling == '444':
+                continue
+            codecs_string += codec.rjust(16)
+        print(codecs_string)
         for target in unique_sorted_metric_values:
-            all_codec_results = results_dict[target]
+            all_codec_results, all_codec_results_terse = results_dict[target]
             consolidated_results = ""
-            for a in all_codec_results:
-                consolidated_results += a.ljust(24)
-            print('{} : {}'.format(target, consolidated_results))
+            for a in all_codec_results_terse:
+                consolidated_results += a.ljust(16)
+            print('{} : {}'.format(str(target).ljust(5), consolidated_results))
+        print('=' * (8 + 16 * len(codecs)))
         print("\n\n")
 
         fig = plt.figure(figsize=(12.8, 7.2))
