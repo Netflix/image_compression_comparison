@@ -31,7 +31,7 @@ In sqlite3 database files, for example `encoding_results_vmaf.db` and `encoding_
 Percentage BD rates can be computed using a script called `compute_BD_rates.py`. The script takes one argument:
 > - `python3 compute_BD_rates.py [db file name]`
 
-and prints values for both `BD Rate VMAF` and `BD Rate SSIM` for every source image as well as the mean over the source dataset. BD rates are printed for both `420` as well as `444` subsampling. 
+and prints values for `BD Rate VMAF`, `BD Rate SSIM`, `BDRate MS_SSIM`, `BDRate VIF`, `BDRate PSNR_Y` and `BDRate PSNR_AVG` for every source image as well as the mean over the source dataset. BD rates are printed for both `420` as well as `444` subsampling. `PSNR_AVG` is derived from `MSE_AVG` which is weighted MSE across all color components, weighted according to number of samples in respective color components.
 
 Also included is a script called `analyze_encoding_results.py` which 
 - (a) stores rate-quality graphs in PNG files
