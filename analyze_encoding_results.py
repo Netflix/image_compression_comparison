@@ -1,6 +1,8 @@
 import sqlite3
 import statistics
 import sys
+import logging
+import ntpath
 import matplotlib.pyplot as plt
 from collections import defaultdict
 
@@ -88,6 +90,11 @@ def main(argv):
     connection = sqlite3.connect(db_file_name)
     unique_sorted_metric_values, total_pixels = apply_checks_before_analyzing(connection, metric_name)
 
+    logger = logging.getLogger('report.bitrate_savings')
+    logger.addHandler(logging.FileHandler('bitrate_savings_' + ntpath.basename(db_file_name) + '.txt'))
+    logger.addHandler(logging.StreamHandler())
+    logger.setLevel('DEBUG')
+
     baseline_codec = 'jpeg'
     sub_sampling_arr = ['420', '444']
     codecs = ['jpeg-mse', 'jpeg-ms-ssim', 'jpeg-im', 'jpeg-hvs-psnr', 'webp', 'kakadu-mse', 'kakadu-visual', 'openjpeg',
@@ -127,24 +134,24 @@ def main(argv):
             results_dict[target] = (results_list, results_list_terse)
             print("")
         print('\n')
-        print('=' * (8 + 16 * len(codecs)))
+        logger.info('=' * (8 + 16 * len(codecs)))
         sub_sampling_report = '{} subsampling'.format(sub_sampling)
-        print(sub_sampling_report)
-        print('-' * len(sub_sampling_report))
+        logger.info(sub_sampling_report)
+        logger.info('-' * len(sub_sampling_report))
         codecs_string = ' ' * 8
         for codec in codecs:
             if codec == 'webp' and sub_sampling == '444':
                 continue
             codecs_string += codec.rjust(16)
-        print(codecs_string)
+        logger.info(codecs_string)
         for target in unique_sorted_metric_values:
             all_codec_results, all_codec_results_terse = results_dict[target]
             consolidated_results = ""
             for a in all_codec_results_terse:
                 consolidated_results += a.ljust(16)
-            print('{} : {}'.format(str(target).ljust(5), consolidated_results))
-        print('=' * (8 + 16 * len(codecs)))
-        print("\n\n")
+            logger.info('{} : {}'.format(str(target).ljust(5), consolidated_results))
+        logger.info('=' * (8 + 16 * len(codecs)))
+        logger.info("\n\n")
 
         fig = plt.figure(figsize=(12.8, 7.2))
         marker_num = 0
@@ -164,7 +171,7 @@ def main(argv):
         plt.ylabel(metric_name)
         plt.title('{} subsampling, using metric {}'.format(sub_sampling, metric_name.upper()))
         plt.tight_layout()
-        fig.savefig('{}_{}_{}.png'.format(sub_sampling, metric_name, db_file_name))
+        fig.savefig('{}_{}_{}.png'.format(sub_sampling, metric_name, ntpath.basename(db_file_name)))
 
 
 if __name__ == '__main__':

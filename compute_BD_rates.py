@@ -1,5 +1,7 @@
 import sqlite3
 import sys
+import logging
+import ntpath
 from statistics import mean
 from collections import namedtuple
 from collections import defaultdict
@@ -98,6 +100,12 @@ def main(argv):
     if len(argv) > 0:
         db_file_name = argv[0]
     connection = sqlite3.connect(db_file_name)
+
+    logger = logging.getLogger('report.bdrates')
+    logger.addHandler(logging.FileHandler('bdrates_' + ntpath.basename(db_file_name) + '.txt'))
+    logger.addHandler(logging.StreamHandler())
+    logger.setLevel('DEBUG')
+
     unique_sources = get_unique_sources_sorted(connection)
     total_pixels = apply_size_check(connection)
 
@@ -146,19 +154,19 @@ def main(argv):
                                     black_list_source_various_metrics,
                                     metrics_for_BDRate)
             results[codec] = result
-        print('\n\n===================' + '=' * 22 * len(metrics_for_BDRate))
+        logger.info('\n\n===================' + '=' * 22 * len(metrics_for_BDRate))
         results_header = 'Results for subsampling {}'.format(sub_sampling)
-        print(results_header)
-        print('-' * len(results_header))
+        logger.info(results_header)
+        logger.info('-' * len(results_header))
         table_header = 'Codec'.ljust(16)
         for metric in metrics_for_BDRate:
             table_header += ' Mean BDRate-{}'.format(metric.upper()).rjust(22)
-        print(table_header)
+        logger.info(table_header)
         for codec in codecs:
             if codec == 'webp' and sub_sampling == '444':
                 continue
-            print(results[codec])
-        print('===================' + '=' * 22 * len(metrics_for_BDRate))
+            logger.info(results[codec])
+        logger.info('===================' + '=' * 22 * len(metrics_for_BDRate))
 
 
 if __name__ == '__main__':
