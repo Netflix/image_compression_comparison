@@ -21,6 +21,9 @@ parallel_*txt
 *_ssim_*_420
 *_ssim_*_444
 *_ssim_*_444u
+*_file_size_bytes_*_420
+*_file_size_bytes_*_444
+*_file_size_bytes_*_444u
 4*.png
 __pycache__/
 stats.json
