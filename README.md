@@ -2,6 +2,7 @@
 - Place your source images in `./images`
 - Currently, only supporting source images in *JPEG* and *PNG* formats
 - Images in one run should have the same size (number of pixels)
+- Avoid spaces or other characters requiring escape sequences in source image file names
 
 #### To add another codec:
 - Update the `Dockerfile` to include your binaries
