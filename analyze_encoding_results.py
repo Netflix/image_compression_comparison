@@ -114,7 +114,7 @@ def main(argv):
             baseline_metric_value, baseline_file_size, baseline_count, baseline_vmaf_value = get_mean_metric_value_file_size_bytes(baseline_results)
             print('Baseline is ' + get_print_string(baseline_codec, sub_sampling, baseline_count, baseline_metric_value,
                                                     baseline_file_size, metric_name, baseline_vmaf_value))
-            results_bpp[baseline_codec].append(baseline_file_size / total_pixels)
+            results_bpp[baseline_codec].append(baseline_file_size * 8.0 / total_pixels)
             results_quality[baseline_codec].append(baseline_metric_value)
             results_list = list()
             results_list_terse = list()
@@ -129,7 +129,7 @@ def main(argv):
                 results_list.append('{} {:.2f}%'.format(codec, (file_size - baseline_file_size) / baseline_file_size * 100.0))
                 results_list_terse.append(
                     '{:.2f}%'.format((file_size - baseline_file_size) / baseline_file_size * 100.0).rjust(16))
-                results_bpp[codec].append(file_size / total_pixels)
+                results_bpp[codec].append(file_size * 8.0 / total_pixels)
                 results_quality[codec].append(metric_value)
             results_dict[target] = (results_list, results_list_terse)
             print("")
