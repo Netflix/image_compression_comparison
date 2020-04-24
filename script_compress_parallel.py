@@ -184,9 +184,11 @@ def get_dimensions(image):
     """ given a source image, return dimensions and bit-depth
     """
     dimension_cmd = ["identify", '-format', '%w,%h,%z', image]
-    width, height, depth = run_program(dimension_cmd).split(",")
+    res = run_program(dimension_cmd)
+    res_split = res.split('\n')
+    width, height, depth = res_split[len(res_split) - 1].split(',')  # assuming last line has the goodies; warnings, if any, appear before
     return width, height, depth
-
+    
 
 def get_pixel_format_for_metric_computation(subsampling):
     """ helper to set pixel format from subsampling, assuming full range,
