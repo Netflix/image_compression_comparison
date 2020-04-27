@@ -40,7 +40,7 @@ def get_rate_quality_points(connection, sub_sampling, codec, source, total_pixel
     points = connection.execute("SELECT {},FILE_SIZE_BYTES,TARGET_METRIC,TARGET_VALUE FROM ENCODES WHERE CODEC='{}' AND SUB_SAMPLING='{}' AND SOURCE='{}'"
                                 .format(csv_metrics_upper, codec, sub_sampling, source)).fetchall()
     rate_quality_points = [
-        RateQualityPoint(elem[len(list_of_metrics)] / total_pixels, get_quality_dict(elem, list_of_metrics),
+        RateQualityPoint(elem[len(list_of_metrics)] * 8 / total_pixels, get_quality_dict(elem, list_of_metrics),
                          elem[len(list_of_metrics) + 1], elem[len(list_of_metrics) + 2]) for elem in points]
     # print(repr(rate_quality_points))
     return rate_quality_points
