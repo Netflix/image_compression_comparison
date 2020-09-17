@@ -28,3 +28,5 @@ parallel_*txt
 __pycache__/
 stats.json
 stats.log
+bdrates_*.db.txt
+bitrate_savings_*.db.txt

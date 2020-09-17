@@ -98,8 +98,9 @@ def main(argv):
     baseline_codec = 'jpeg'
     sub_sampling_arr = ['420', '444']
     codecs = ['jpeg-mse', 'jpeg-ms-ssim', 'jpeg-im', 'jpeg-hvs-psnr', 'webp', 'kakadu-mse', 'kakadu-visual', 'openjpeg',
-              'hevc', 'avif-mse', 'avif-ssim']
-    plot_list = ['webp', 'kakadu-mse', 'kakadu-visual', 'hevc', 'avif-mse', 'avif-ssim']
+              'hevc', 'avif-mse', 'avif-ssim', 'avifenc-sp-0', 'avifenc-sp-2', 'avifenc-sp-4', 'avifenc-sp-8']
+    # plot_list = ['webp', 'kakadu-mse', 'kakadu-visual', 'hevc', 'avif-mse', 'avif-ssim']
+    plot_list = ['webp', 'avif-mse', 'avifenc-sp-0', 'avifenc-sp-2', 'avifenc-sp-4', 'avifenc-sp-8']
     color_list = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
     marker_list = ['o', 'v', '>', '<', 's', 'p', 'd', '4', 'P', 'X']
     assert len(color_list) == len(marker_list)  # 10 curves on one plot is the limit, beyond that is sensory overload
