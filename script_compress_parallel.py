@@ -87,6 +87,8 @@ TUPLE_CODECS = (
     CodecType('hevc', True, 10, 51, 1, '444'),
     CodecType('hevc', True, 10, 51, 1, '444u'),
 
+    # The codecs 'avif-mse' and 'avif-ssim' write out a "single-frame video" file in IVF format,
+    # so technically not a proper AVIF. But they accomplish "full-range" YUV encoding similar to a "proper" AVIF.
     CodecType('avif-mse', True, 8, 63, 1, '420'),
     CodecType('avif-mse', True, 8, 63, 1, '444'),
     CodecType('avif-mse', True, 8, 63, 1, '444u'),
@@ -94,6 +96,24 @@ TUPLE_CODECS = (
     CodecType('avif-ssim', True, 8, 63, 1, '420'),
     CodecType('avif-ssim', True, 8, 63, 1, '444'),
     CodecType('avif-ssim', True, 8, 63, 1, '444u'),
+
+    # Codecs starting with 'avifenc' prefix write out a proper AVIF; avifenc is a libavif-based tool.
+    # https://github.com/AOMediaCodec/libavif
+    CodecType('avifenc-sp-0', True, 8, 62, 1, '420'),
+    CodecType('avifenc-sp-0', True, 8, 62, 1, '444'),
+    CodecType('avifenc-sp-0', True, 8, 62, 1, '444u'),
+
+    CodecType('avifenc-sp-2', True, 8, 62, 1, '420'),
+    CodecType('avifenc-sp-2', True, 8, 62, 1, '444'),
+    CodecType('avifenc-sp-2', True, 8, 62, 1, '444u'),
+
+    CodecType('avifenc-sp-4', True, 8, 62, 1, '420'),
+    CodecType('avifenc-sp-4', True, 8, 62, 1, '444'),
+    CodecType('avifenc-sp-4', True, 8, 62, 1, '444u'),
+
+    CodecType('avifenc-sp-8', True, 8, 62, 1, '420'),
+    CodecType('avifenc-sp-8', True, 8, 62, 1, '444'),
+    CodecType('avifenc-sp-8', True, 8, 62, 1, '444u'),
 
 )
 
@@ -600,6 +620,38 @@ def f(param, codec, image, width, height, temp_folder, subsampling):
 
         cmd = ['aomdec', '--rawvideo', '-o', decoded_yuv, encoded_file]
         my_exec(cmd)
+
+    elif codec in ['avifenc-sp-0', 'avifenc-sp-2', 'avifenc-sp-4', 'avifenc-sp-8'] and subsampling in ['420', '444u', '444']:
+        min_QP = int(param) - 1
+        max_QP = int(param) + 1
+        info = codec.split('-')
+        speed = info[2]
+
+        cmd = ['ffmpeg', '-y', '-i', image, '-pix_fmt', get_pixel_format_for_encoding(subsampling), source_yuv]
+        my_exec(cmd)
+
+        source_y4m = get_filename_with_temp_folder(temp_folder, 'source.y4m')
+        cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-pix_fmt', get_pixel_format_for_encoding(subsampling),
+               '-s:v', '%s,%s' % (width, height), '-i', source_yuv, source_y4m]
+        my_exec(cmd)
+
+        encoded_file = get_filename_with_temp_folder(temp_folder, 'temp.avif')
+        # bit-depth and yuv subsampling are maintained for y4m input
+        cmd = ['/tools/libavif/build/avifenc', source_y4m, encoded_file, '--nclx', '1/13/1', '--min', str(min_QP),
+               '--max', str(max_QP), '--speed', speed, '--codec', 'aom', '--jobs', '4']
+        my_exec(cmd)
+
+        decoded_y4m = get_filename_with_temp_folder(temp_folder, 'decoded.y4m')
+        cmd = ['/tools/libavif/build/avifdec', '--codec', 'aom', encoded_file, decoded_y4m]
+        my_exec(cmd)
+
+        # explicitly convert to 420 or 444 depending on the case from the y4m
+        cmd = ['ffmpeg', '-y', '-i', decoded_y4m, '-pix_fmt', get_pixel_format_for_encoding(subsampling),
+               decoded_yuv]
+        my_exec(cmd)
+
+        if subsampling == '444u':
+            source_yuv, decoded_yuv = convert_420_to_444_source_and_decoded(source_yuv, decoded_yuv, image, width, height, subsampling)
 
     else:
         raise RuntimeError('Unsupported codec and subsampling ' + codec + ' / ' + subsampling)
