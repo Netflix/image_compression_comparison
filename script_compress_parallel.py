@@ -111,9 +111,33 @@ TUPLE_CODECS = (
     CodecType('avifenc-sp-4', True, 8, 62, 1, '444'),
     CodecType('avifenc-sp-4', True, 8, 62, 1, '444u'),
 
+    CodecType('avifenc-sp-6', True, 8, 62, 1, '420'),
+    CodecType('avifenc-sp-6', True, 8, 62, 1, '444'),
+    CodecType('avifenc-sp-6', True, 8, 62, 1, '444u'),
+
     CodecType('avifenc-sp-8', True, 8, 62, 1, '420'),
     CodecType('avifenc-sp-8', True, 8, 62, 1, '444'),
     CodecType('avifenc-sp-8', True, 8, 62, 1, '444u'),
+
+    CodecType('avifenc-sp-0-crf', True, 8, 62, 1, '420'),
+    CodecType('avifenc-sp-0-crf', True, 8, 62, 1, '444'),
+    CodecType('avifenc-sp-0-crf', True, 8, 62, 1, '444u'),
+
+    CodecType('avifenc-sp-2-crf', True, 8, 62, 1, '420'),
+    CodecType('avifenc-sp-2-crf', True, 8, 62, 1, '444'),
+    CodecType('avifenc-sp-2-crf', True, 8, 62, 1, '444u'),
+
+    CodecType('avifenc-sp-4-crf', True, 8, 62, 1, '420'),
+    CodecType('avifenc-sp-4-crf', True, 8, 62, 1, '444'),
+    CodecType('avifenc-sp-4-crf', True, 8, 62, 1, '444u'),
+
+    CodecType('avifenc-sp-6-crf', True, 8, 62, 1, '420'),
+    CodecType('avifenc-sp-6-crf', True, 8, 62, 1, '444'),
+    CodecType('avifenc-sp-6-crf', True, 8, 62, 1, '444u'),
+
+    CodecType('avifenc-sp-8-crf', True, 8, 62, 1, '420'),
+    CodecType('avifenc-sp-8-crf', True, 8, 62, 1, '444'),
+    CodecType('avifenc-sp-8-crf', True, 8, 62, 1, '444u'),
 
 )
 
@@ -347,7 +371,7 @@ def kakadu_encode_helper(image, subsampling, temp_folder, source_yuv, param, cod
 
     encoded_file = get_filename_with_temp_folder(temp_folder, 'temp.mj2')
     # kakadu derives width, height, sub-sampling from file name so avoid confusion with folder name
-    cmd = ['/tools/kakadu/KDU7A2_Demo_Apps_for_Ubuntu-x86-64_170827/kdu_v_compress', '-quiet', '-i',
+    cmd = ['/tools/kakadu/KDU805_Demo_Apps_for_Linux-x86-64_200602/kdu_v_compress', '-quiet', '-i',
            ntpath.basename(source_yuv),
            '-o', ntpath.basename(encoded_file), '-precise', '-rate', param, '-tolerance', '0']
     if codec == 'kakadu-mse':
@@ -362,7 +386,7 @@ def kakadu_encode_helper(image, subsampling, temp_folder, source_yuv, param, cod
         except:
             LOGGER.error("Error while deleting file : " + filePath)
 
-    cmd = ['/tools/kakadu/KDU7A2_Demo_Apps_for_Ubuntu-x86-64_170827/kdu_v_expand', '-quiet', '-i', encoded_file,
+    cmd = ['/tools/kakadu/KDU805_Demo_Apps_for_Linux-x86-64_200602/kdu_v_expand', '-quiet', '-i', encoded_file,
            '-o', decoded_yuv]
     my_exec(cmd)
 
@@ -621,9 +645,15 @@ def f(param, codec, image, width, height, temp_folder, subsampling):
         cmd = ['aomdec', '--rawvideo', '-o', decoded_yuv, encoded_file]
         my_exec(cmd)
 
-    elif codec in ['avifenc-sp-0', 'avifenc-sp-2', 'avifenc-sp-4', 'avifenc-sp-8'] and subsampling in ['420', '444u', '444']:
+    elif codec in ['avifenc-sp-0', 'avifenc-sp-2', 'avifenc-sp-4', 'avifenc-sp-6', 'avifenc-sp-8',
+                   'avifenc-sp-0-crf', 'avifenc-sp-2-crf', 'avifenc-sp-4-crf', 'avifenc-sp-6-crf', 'avifenc-sp-8-crf'] \
+            and subsampling in ['420', '444u', '444']:
         min_QP = int(param) - 1
         max_QP = int(param) + 1
+        if codec.endswith('crf'):
+            min_QP = 0
+            max_QP = 63
+            crf_val = int(param)
         info = codec.split('-')
         speed = info[2]
 
@@ -637,8 +667,17 @@ def f(param, codec, image, width, height, temp_folder, subsampling):
 
         encoded_file = get_filename_with_temp_folder(temp_folder, 'temp.avif')
         # bit-depth and yuv subsampling are maintained for y4m input
-        cmd = ['/tools/libavif/build/avifenc', source_y4m, encoded_file, '--nclx', '1/13/1', '--min', str(min_QP),
-               '--max', str(max_QP), '--speed', speed, '--codec', 'aom', '--jobs', '4']
+        # can't hurt to specify -d 8
+        if codec.endswith('crf'):
+            # default tuning is PSNR; ssim can be added with "-a tune=ssim"
+            cmd = ['/tools/libavif/build/avifenc', source_y4m, encoded_file, '-d', '8',
+                   '--nclx', '1/13/1', '--min', str(min_QP), '--max', str(max_QP),
+                   '-a', 'end-usage=q', '-a', 'cq-level={}'.format(crf_val),
+                   '--speed', speed, '--codec', 'aom', '--jobs', '4']
+        else:
+            cmd = ['/tools/libavif/build/avifenc', source_y4m, encoded_file, '-d', '8',
+                   '--nclx', '1/13/1', '--min', str(min_QP), '--max', str(max_QP),
+                   '--speed', speed, '--codec', 'aom', '--jobs', '4']
         my_exec(cmd)
 
         decoded_y4m = get_filename_with_temp_folder(temp_folder, 'decoded.y4m')

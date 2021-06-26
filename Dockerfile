@@ -39,7 +39,9 @@ ENV         FFMPEG_VERSION=4.2.1                \
             FONTCONFIG_VERSION=2.12.4           \
             LIBVIDSTAB_VERSION=1.1.0            \
             KVAZAAR_VERSION=1.2.0               \
-            AOM_VERSION=v1.0.0-errata1          \
+            AOM_VERSION=v3.1.1                  \
+            LIBAVIF_SHA=6235931                 \
+            KDU_PACKAGE=KDU805_Demo_Apps_for_Linux-x86-64_200602       \
             HM_VERSION=HM-16.20+SCM-8.8         \
             SRC=/usr/local
 
@@ -110,6 +112,8 @@ RUN git clone -b release https://github.com/ninja-build/ninja.git && \
 RUN mkdir -p /tools && \
     cd /tools && \
     git clone https://github.com/AOMediaCodec/libavif && \
+    cd /tools/libavif && \
+    git checkout ${LIBAVIF_SHA} && \
     cd /tools/libavif/ext && \
     $SHELL ./aom.cmd && \
     cd /tools/libavif && \
@@ -359,6 +363,7 @@ RUN mkdir -p /tools && \
     cd /tools && \
     git clone https://aomedia.googlesource.com/aom && \
     cd aom && \
+    git checkout tags/${AOM_VERSION} && \
     mkdir _build && cd _build && \
     cmake .. && \
     make install
@@ -457,13 +462,13 @@ RUN mkdir -p /tools && \
 # KAKADU
 RUN mkdir -p /tools && \
     cd /tools && \
-    wget -O kakadu.zip http://kakadusoftware.com/wp-content/uploads/2014/06/KDU7A2_Demo_Apps_for_Ubuntu-x86-64_170827.zip && \
+    wget -O kakadu.zip http://kakadusoftware.com/wp-content/uploads/${KDU_PACKAGE}.zip && \
     unzip kakadu.zip -d kakadu && \
     rm -f kakadu.zip && \
-    patchelf --set-rpath '$ORIGIN/' /tools/kakadu/KDU7A2_Demo_Apps_for_Ubuntu-x86-64_170827/kdu_compress && \
-    patchelf --set-rpath '$ORIGIN/' /tools/kakadu/KDU7A2_Demo_Apps_for_Ubuntu-x86-64_170827/kdu_expand && \
-    patchelf --set-rpath '$ORIGIN/' /tools/kakadu/KDU7A2_Demo_Apps_for_Ubuntu-x86-64_170827/kdu_v_compress && \
-    patchelf --set-rpath '$ORIGIN/' /tools/kakadu/KDU7A2_Demo_Apps_for_Ubuntu-x86-64_170827/kdu_v_expand
+    patchelf --set-rpath '$ORIGIN/' /tools/kakadu/${KDU_PACKAGE}/kdu_compress && \
+    patchelf --set-rpath '$ORIGIN/' /tools/kakadu/${KDU_PACKAGE}/kdu_expand && \
+    patchelf --set-rpath '$ORIGIN/' /tools/kakadu/${KDU_PACKAGE}/kdu_v_compress && \
+    patchelf --set-rpath '$ORIGIN/' /tools/kakadu/${KDU_PACKAGE}/kdu_v_expand
 
 
 ## cleanup
