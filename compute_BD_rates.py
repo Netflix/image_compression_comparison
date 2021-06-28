@@ -112,7 +112,9 @@ def main(argv):
     baseline_codec = 'jpeg'
     sub_sampling_arr = ['420', '444']
     codecs = ['jpeg-mse', 'jpeg-ms-ssim', 'jpeg-im', 'jpeg-hvs-psnr', 'webp', 'kakadu-mse', 'kakadu-visual', 'openjpeg',
-              'hevc', 'avif-mse', 'avif-ssim', 'avifenc-sp-0', 'avifenc-sp-2', 'avifenc-sp-4', 'avifenc-sp-8']
+              'hevc', 'avif-mse', 'avif-ssim',
+              'avifenc-sp-0', 'avifenc-sp-2', 'avifenc-sp-4', 'avifenc-sp-6', 'avifenc-sp-8',
+              'avifenc-sp-0-crf', 'avifenc-sp-2-crf', 'avifenc-sp-4-crf', 'avifenc-sp-6-crf', 'avifenc-sp-8-crf']
     metrics_for_BDRate = ['vmaf', 'ssim', 'ms_ssim', 'vif', 'adm2', 'psnr_y', 'psnr_avg']
     for sub_sampling in sub_sampling_arr:
         bdrates_various_metrics = dict()
