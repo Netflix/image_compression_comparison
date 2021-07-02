@@ -119,6 +119,26 @@ TUPLE_CODECS = (
     CodecType('avifenc-sp-8', True, 8, 62, 1, '444'),
     CodecType('avifenc-sp-8', True, 8, 62, 1, '444u'),
 
+    # CodecType('avifenc_ssim-sp-0', True, 8, 62, 1, '420'),
+    # CodecType('avifenc_ssim-sp-0', True, 8, 62, 1, '444'),
+    # CodecType('avifenc_ssim-sp-0', True, 8, 62, 1, '444u'),
+    #
+    # CodecType('avifenc_ssim-sp-2', True, 8, 62, 1, '420'),
+    # CodecType('avifenc_ssim-sp-2', True, 8, 62, 1, '444'),
+    # CodecType('avifenc_ssim-sp-2', True, 8, 62, 1, '444u'),
+    #
+    # CodecType('avifenc_ssim-sp-4', True, 8, 62, 1, '420'),
+    # CodecType('avifenc_ssim-sp-4', True, 8, 62, 1, '444'),
+    # CodecType('avifenc_ssim-sp-4', True, 8, 62, 1, '444u'),
+    #
+    # CodecType('avifenc_ssim-sp-6', True, 8, 62, 1, '420'),
+    # CodecType('avifenc_ssim-sp-6', True, 8, 62, 1, '444'),
+    # CodecType('avifenc_ssim-sp-6', True, 8, 62, 1, '444u'),
+    #
+    # CodecType('avifenc_ssim-sp-8', True, 8, 62, 1, '420'),
+    # CodecType('avifenc_ssim-sp-8', True, 8, 62, 1, '444'),
+    # CodecType('avifenc_ssim-sp-8', True, 8, 62, 1, '444u'),
+
     CodecType('avifenc-sp-0-crf', True, 8, 62, 1, '420'),
     CodecType('avifenc-sp-0-crf', True, 8, 62, 1, '444'),
     CodecType('avifenc-sp-0-crf', True, 8, 62, 1, '444u'),
@@ -138,6 +158,26 @@ TUPLE_CODECS = (
     CodecType('avifenc-sp-8-crf', True, 8, 62, 1, '420'),
     CodecType('avifenc-sp-8-crf', True, 8, 62, 1, '444'),
     CodecType('avifenc-sp-8-crf', True, 8, 62, 1, '444u'),
+
+    # CodecType('avifenc_ssim-sp-0-crf', True, 8, 62, 1, '420'),
+    # CodecType('avifenc_ssim-sp-0-crf', True, 8, 62, 1, '444'),
+    # CodecType('avifenc_ssim-sp-0-crf', True, 8, 62, 1, '444u'),
+    #
+    # CodecType('avifenc_ssim-sp-2-crf', True, 8, 62, 1, '420'),
+    # CodecType('avifenc_ssim-sp-2-crf', True, 8, 62, 1, '444'),
+    # CodecType('avifenc_ssim-sp-2-crf', True, 8, 62, 1, '444u'),
+    #
+    # CodecType('avifenc_ssim-sp-4-crf', True, 8, 62, 1, '420'),
+    # CodecType('avifenc_ssim-sp-4-crf', True, 8, 62, 1, '444'),
+    # CodecType('avifenc_ssim-sp-4-crf', True, 8, 62, 1, '444u'),
+    #
+    # CodecType('avifenc_ssim-sp-6-crf', True, 8, 62, 1, '420'),
+    # CodecType('avifenc_ssim-sp-6-crf', True, 8, 62, 1, '444'),
+    # CodecType('avifenc_ssim-sp-6-crf', True, 8, 62, 1, '444u'),
+    #
+    # CodecType('avifenc_ssim-sp-8-crf', True, 8, 62, 1, '420'),
+    # CodecType('avifenc_ssim-sp-8-crf', True, 8, 62, 1, '444'),
+    # CodecType('avifenc_ssim-sp-8-crf', True, 8, 62, 1, '444u'),
 
 )
 
@@ -646,7 +686,13 @@ def f(param, codec, image, width, height, temp_folder, subsampling):
         my_exec(cmd)
 
     elif codec in ['avifenc-sp-0', 'avifenc-sp-2', 'avifenc-sp-4', 'avifenc-sp-6', 'avifenc-sp-8',
-                   'avifenc-sp-0-crf', 'avifenc-sp-2-crf', 'avifenc-sp-4-crf', 'avifenc-sp-6-crf', 'avifenc-sp-8-crf'] \
+                   'avifenc_ssim-sp-0', 'avifenc_ssim-sp-2', 'avifenc_ssim-sp-4', 'avifenc_ssim-sp-6',
+                   'avifenc_ssim-sp-8',
+                   'avifenc-sp-0-crf', 'avifenc-sp-2-crf', 'avifenc-sp-4-crf', 'avifenc-sp-6-crf',
+                   'avifenc-sp-8-crf',
+                   'avifenc_ssim-sp-0-crf', 'avifenc_ssim-sp-2-crf', 'avifenc_ssim-sp-4-crf', 'avifenc_ssim-sp-6-crf',
+                   'avifenc_ssim-sp-8-crf'
+                   ] \
             and subsampling in ['420', '444u', '444']:
         min_QP = int(param) - 1
         max_QP = int(param) + 1
@@ -671,13 +717,17 @@ def f(param, codec, image, width, height, temp_folder, subsampling):
         if codec.endswith('crf'):
             # default tuning is PSNR; ssim can be added with "-a tune=ssim"
             cmd = ['/tools/libavif/build/avifenc', source_y4m, encoded_file, '-d', '8',
-                   '--nclx', '1/13/1', '--min', str(min_QP), '--max', str(max_QP),
+                   '--nclx', '1/13/6', '--min', str(min_QP), '--max', str(max_QP),
                    '-a', 'end-usage=q', '-a', 'cq-level={}'.format(crf_val),
                    '--speed', speed, '--codec', 'aom', '--jobs', '4']
         else:
             cmd = ['/tools/libavif/build/avifenc', source_y4m, encoded_file, '-d', '8',
-                   '--nclx', '1/13/1', '--min', str(min_QP), '--max', str(max_QP),
+                   '--nclx', '1/13/6', '--min', str(min_QP), '--max', str(max_QP),
                    '--speed', speed, '--codec', 'aom', '--jobs', '4']
+        if codec.find('ssim') > 0:
+            cmd.append('-a')
+            cmd.append('tune=ssim')
+        LOGGER.debug(cmd)
         my_exec(cmd)
 
         decoded_y4m = get_filename_with_temp_folder(temp_folder, 'decoded.y4m')

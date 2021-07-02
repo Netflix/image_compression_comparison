@@ -19,6 +19,7 @@ __status__ = "Development"
 
 RateQualityPoint = namedtuple('RateQualityPoint', ['bpp', 'quality', 'target_metric', 'target_value'])
 BD_RATE_EXCEPTION_STRING = 'BD_RATE_EXCEPTION'
+CODEC_PRINT_LENGTH = 22
 
 
 def get_unique_sources_sorted(connection):
@@ -86,7 +87,7 @@ def print_bd_rates(bdrates_various_metrics, codec, unique_sources, black_list_so
             if source not in black_list_source_various_metrics[metric]:
                 bdrates_this_codec_various_metrics[metric].append(bdrates_various_metrics[metric][codec][source])
         print(print_string)
-    result = codec.ljust(16)
+    result = codec.ljust(CODEC_PRINT_LENGTH)
     result_local = result
     for metric in list_of_metrics:
         result += '{}'.format(get_formatted_mean_bdrate(mean(bdrates_this_codec_various_metrics[metric])))
@@ -111,10 +112,16 @@ def main(argv):
 
     baseline_codec = 'jpeg'
     sub_sampling_arr = ['420', '444']
+    # sub_sampling_arr = ['444']
     codecs = ['jpeg-mse', 'jpeg-ms-ssim', 'jpeg-im', 'jpeg-hvs-psnr', 'webp', 'kakadu-mse', 'kakadu-visual', 'openjpeg',
               'hevc', 'avif-mse', 'avif-ssim',
               'avifenc-sp-0', 'avifenc-sp-2', 'avifenc-sp-4', 'avifenc-sp-6', 'avifenc-sp-8',
               'avifenc-sp-0-crf', 'avifenc-sp-2-crf', 'avifenc-sp-4-crf', 'avifenc-sp-6-crf', 'avifenc-sp-8-crf']
+    # codecs = ['avifenc-sp-0', 'avifenc-sp-2', 'avifenc-sp-4', 'avifenc-sp-6', 'avifenc-sp-8',
+    #           'avifenc_ssim-sp-0', 'avifenc_ssim-sp-2', 'avifenc_ssim-sp-4', 'avifenc_ssim-sp-6', 'avifenc_ssim-sp-8',
+    #           'avifenc-sp-0-crf', 'avifenc-sp-2-crf', 'avifenc-sp-4-crf', 'avifenc-sp-6-crf', 'avifenc-sp-8-crf',
+    #           'avifenc_ssim-sp-0-crf', 'avifenc_ssim-sp-2-crf', 'avifenc_ssim-sp-4-crf', 'avifenc_ssim-sp-6-crf',
+    #           'avifenc_ssim-sp-8-crf']
     metrics_for_BDRate = ['vmaf', 'ssim', 'ms_ssim', 'vif', 'adm2', 'psnr_y', 'psnr_avg']
     for sub_sampling in sub_sampling_arr:
         bdrates_various_metrics = dict()
@@ -156,11 +163,11 @@ def main(argv):
                                     black_list_source_various_metrics,
                                     metrics_for_BDRate)
             results[codec] = result
-        logger.info('\n\n===================' + '=' * 22 * len(metrics_for_BDRate))
+        logger.info('\n\n=======================' + '=' * 22 * len(metrics_for_BDRate))
         results_header = 'Results for subsampling {}'.format(sub_sampling)
         logger.info(results_header)
         logger.info('-' * len(results_header))
-        table_header = 'Codec'.ljust(16)
+        table_header = 'Codec'.ljust(CODEC_PRINT_LENGTH)
         for metric in metrics_for_BDRate:
             table_header += ' Mean BDRate-{}'.format(metric.upper()).rjust(22)
         logger.info(table_header)
@@ -168,7 +175,7 @@ def main(argv):
             if codec == 'webp' and sub_sampling == '444':
                 continue
             logger.info(results[codec])
-        logger.info('===================' + '=' * 22 * len(metrics_for_BDRate))
+        logger.info('=======================' + '=' * 22 * len(metrics_for_BDRate))
 
 
 if __name__ == '__main__':
