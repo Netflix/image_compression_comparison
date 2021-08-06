@@ -978,7 +978,7 @@ def main(metric, target_arr, target_tol, db_file_name, only_perform_missing_enco
                                                 metric, target, target_tol, codec.name, image, width, height,
                                                 codec.subsampling),
                                           callback=update_stats, error_callback=error_function), codec.name,
-                         codec.subsampling))
+                         codec.subsampling, metric, str(target)))
             LOGGER.info('-----------------------------------------------------------------------------------------')
 
     pool.close()
@@ -994,14 +994,14 @@ def main(metric, target_arr, target_tol, db_file_name, only_perform_missing_enco
             LOGGER.info(repr(task_result))
         except Exception as e:  ## all the exceptions encountered during parallel execution can be collected here at the end nicely
             LOGGER.error(repr(e))
-            TOTAL_ERRORS[result[1] + result[2]] += 1
+            TOTAL_ERRORS[result[1] + result[2] + result[3] + result[4]] += 1
 
     LOGGER.info("\n\n")
     if not only_perform_missing_encodes:
         LOGGER.info("Total payload in kilo Bytes:")
         for codec in TUPLE_CODECS:
             for target in target_arr:
-                if codec.name + codec.subsampling in TOTAL_ERRORS:
+                if codec.name + codec.subsampling + metric + str(target) in TOTAL_ERRORS:
                     LOGGER.info('  {}: {} (Total errors {})'.format(codec.name + codec.subsampling + metric + str(target),
                                                                     TOTAL_BYTES[codec.name + codec.subsampling + metric + str(target)] / 1000.0,
                                                                     TOTAL_ERRORS[codec.name + codec.subsampling + metric + str(target)]))
@@ -1012,7 +1012,7 @@ def main(metric, target_arr, target_tol, db_file_name, only_perform_missing_enco
         LOGGER.info("Average metric value:")
         for codec in TUPLE_CODECS:
             for target in target_arr:
-                if codec.name + codec.subsampling in TOTAL_ERRORS:
+                if codec.name + codec.subsampling + metric + str(target) in TOTAL_ERRORS:
                     LOGGER.info('  {}: {} (Total errors {})'.format(codec.name + codec.subsampling + metric + str(target),
                                                                     TOTAL_METRIC[codec.name + codec.subsampling + metric + str(target)]
                                                                     / float(len(images)),
